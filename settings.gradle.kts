@@ -33,6 +33,7 @@ rootProject.name = "daglo"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include(":app")
 include(":core:designsystem")
+include(":core:network")
 include(":data")
 include(":domain")
 include(":feature")
