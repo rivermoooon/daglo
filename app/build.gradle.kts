@@ -23,6 +23,7 @@ android {
 
 dependencies {
     implementation(projects.core.designsystem)
+    implementation(projects.core.network)
     implementation(projects.data)
     implementation(projects.domain)
     implementation(projects.feature)
