@@ -25,6 +25,7 @@ dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.navigation)
     implementation(projects.core.network)
+    implementation(projects.core.common)
     implementation(projects.data)
     implementation(projects.domain)
     implementation(projects.feature)
