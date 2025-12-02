@@ -12,11 +12,12 @@ import com.moonsu.assignment.core.designsystem.R
 fun DagloImage(
     model: Any?,
     modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
 ) {
     AsyncImage(
         model = model ?: R.drawable.ic_default,
         placeholder = painterResource(R.drawable.ic_default),
-        contentScale = ContentScale.Fit,
+        contentScale = contentScale,
         error = if (LocalInspectionMode.current) painterResource(R.drawable.ic_default) else null,
         contentDescription = null,
         modifier = modifier,
