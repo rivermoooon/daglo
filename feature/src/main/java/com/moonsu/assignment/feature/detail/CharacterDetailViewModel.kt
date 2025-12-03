@@ -46,7 +46,7 @@ class CharacterDetailViewModel @Inject constructor(
         //     .onFailure { e -> setState { copy(isLoading = false, error = e.message) } }
 
         // 더미 데이터로 UI 확인
-        delay(500)
+        delay(100)
         setState {
             copy(
                 isLoading = false,

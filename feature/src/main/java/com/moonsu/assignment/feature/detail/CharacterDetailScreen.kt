@@ -1,5 +1,11 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class)
+
 package com.moonsu.assignment.feature.detail
 
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,12 +28,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.moonsu.assignment.core.designsystem.component.DagloImage
-import com.moonsu.assignment.core.designsystem.component.DagloProgress
 import com.moonsu.assignment.core.designsystem.component.DagloTopBar
 import com.moonsu.assignment.core.designsystem.component.TopAppBarNavigationType
 import com.moonsu.assignment.core.designsystem.foundation.DagloColor
@@ -35,107 +41,160 @@ import com.moonsu.assignment.core.designsystem.foundation.DagloTheme
 import com.moonsu.assignment.domain.Character
 
 @Composable
-internal fun CharacterDetailRoute(
+fun CharacterDetailRoute(
     characterId: Int,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
     viewModel: CharacterDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     CharacterDetailScreen(
         state = state,
-        onIntent = viewModel::onIntent,
+        characterId = characterId,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedContentScope = animatedContentScope,
+        onBackClick = { viewModel.onIntent(CharacterDetailIntent.OnBackClick) },
+        onRefresh = { viewModel.onIntent(CharacterDetailIntent.Refresh) },
     )
 }
 
 @Composable
 private fun CharacterDetailScreen(
     state: CharacterDetailUiState,
-    onIntent: (CharacterDetailIntent) -> Unit,
+    characterId: Int,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
+    onBackClick: () -> Unit,
+    onRefresh: () -> Unit,
 ) {
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DagloTheme.colors.background),
     ) {
-        DagloTopBar(
-            title = "캐릭터 상세",
-            navigationType = TopAppBarNavigationType.Back,
-            navigationIconContentDescription = "뒤로가기",
-            onNavigationClick = { onIntent(CharacterDetailIntent.OnBackClick) },
-        )
+        CharacterDetailTopBar(onBackClick = onBackClick)
 
         Box(modifier = Modifier.weight(1f)) {
             when {
-                state.showLoadingState -> {
-                    LoadingContent()
-                }
+                state.showErrorState -> ErrorContent(
+                    message = state.error ?: "오류가 발생했습니다.",
+                    onRetry = onRefresh,
+                )
 
-                state.showErrorState -> {
-                    ErrorContent(
-                        message = state.error ?: "오류가 발생했습니다.",
-                        onRetry = { onIntent(CharacterDetailIntent.Refresh) },
-                    )
-                }
-
-                state.showContent -> {
-                    state.character?.let { character ->
-                        CharacterDetailContent(character = character)
-                    }
-                }
+                else -> CharacterDetailContent(
+                    character = state.character,
+                    characterId = characterId,
+                    scrollState = scrollState,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope,
+                )
             }
         }
     }
 }
 
 @Composable
+private fun CharacterDetailTopBar(
+    onBackClick: () -> Unit,
+) {
+    DagloTopBar(
+        title = "캐릭터 상세",
+        navigationType = TopAppBarNavigationType.Back,
+        navigationIconContentDescription = "뒤로가기",
+        onNavigationClick = onBackClick,
+    )
+}
+
+@Composable
 private fun CharacterDetailContent(
-    character: Character,
+    character: Character?,
+    characterId: Int,
+    scrollState: ScrollState,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(scrollState),
     ) {
-        DagloImage(
-            model = character.image,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f),
+        CharacterImage(
+            character = character,
+            characterId = characterId,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedContentScope = animatedContentScope,
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            CharacterHeader(
-                name = character.name,
-                status = character.status,
-            )
-
-            HorizontalDivider(color = DagloTheme.colors.outlineVariant)
-
-            InfoSection(title = "기본 정보") {
-                InfoRow(label = "Gender", value = character.gender)
-                InfoRow(label = "Species", value = character.species)
-                if (character.type.isNotBlank()) {
-                    InfoRow(label = "Type", value = character.type)
-                }
-            }
-
-            InfoSection(title = "위치 정보") {
-                InfoRow(label = "Origin", value = character.origin.name)
-                InfoRow(label = "Location", value = character.location.name)
-            }
-
-            if (character.episode.isNotEmpty()) {
-                InfoSection(title = "출연 정보") {
-                    InfoRow(label = "Episodes", value = "${character.episode.size}개 에피소드 출연")
-                }
-            }
+        if (character != null) {
+            CharacterInfo(character = character)
+        } else {
+            CharacterInfoSkeleton()
         }
+    }
+}
+
+@Composable
+private fun CharacterImage(
+    character: Character?,
+    characterId: Int,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
+) {
+    val imageUrl = character?.image
+        ?: "https://rickandmortyapi.com/api/character/avatar/${(characterId % 826) + 1}.jpeg"
+
+    DagloImage(
+        model = imageUrl,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f),
+        sharedTransitionScope = sharedTransitionScope,
+        sharedTransitionKey = "character-$characterId",
+        animatedContentScope = animatedContentScope,
+    )
+}
+
+@Composable
+private fun CharacterInfo(character: Character) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        CharacterHeader(
+            name = character.name,
+            status = character.status,
+        )
+
+        HorizontalDivider(color = DagloTheme.colors.outlineVariant)
+
+        BasicInfoSection(character = character)
+
+        LocationInfoSection(character = character)
+
+        if (character.episode.isNotEmpty()) {
+            EpisodeInfoSection(episodeCount = character.episode.size)
+        }
+    }
+}
+
+@Composable
+private fun CharacterInfoSkeleton() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        CharacterHeader(
+            name = "",
+            status = "unknown",
+        )
     }
 }
 
@@ -162,30 +221,12 @@ private fun CharacterHeader(
 
 @Composable
 private fun StatusBadge(status: String) {
-    val (backgroundColor, textColor, indicatorColor) = when (status.lowercase()) {
-        "alive" -> Triple(
-            DagloColor.Green100,
-            DagloColor.Green700,
-            DagloColor.Green500,
-        )
-
-        "dead" -> Triple(
-            DagloColor.Red100,
-            DagloColor.Red700,
-            DagloColor.Red500,
-        )
-
-        else -> Triple(
-            DagloColor.Gray200,
-            DagloColor.Gray700,
-            DagloColor.Gray500,
-        )
-    }
+    val statusColors = rememberStatusColors(status)
 
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(backgroundColor)
+            .background(statusColors.background)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -194,13 +235,68 @@ private fun StatusBadge(status: String) {
             modifier = Modifier
                 .size(8.dp)
                 .clip(CircleShape)
-                .background(indicatorColor),
+                .background(statusColors.indicator),
         )
         Text(
             text = status,
             style = DagloTheme.typography.labelMediumR,
-            color = textColor,
+            color = statusColors.text,
         )
+    }
+}
+
+@Composable
+private fun rememberStatusColors(status: String): StatusColors {
+    return when (status.lowercase()) {
+        "alive" -> StatusColors(
+            background = DagloColor.Green100,
+            text = DagloColor.Green700,
+            indicator = DagloColor.Green500,
+        )
+
+        "dead" -> StatusColors(
+            background = DagloColor.Red100,
+            text = DagloColor.Red700,
+            indicator = DagloColor.Red500,
+        )
+
+        else -> StatusColors(
+            background = DagloColor.Gray200,
+            text = DagloColor.Gray700,
+            indicator = DagloColor.Gray500,
+        )
+    }
+}
+
+private data class StatusColors(
+    val background: Color,
+    val text: Color,
+    val indicator: Color,
+)
+
+@Composable
+private fun BasicInfoSection(character: Character) {
+    InfoSection(title = "기본 정보") {
+        InfoRow(label = "Gender", value = character.gender)
+        InfoRow(label = "Species", value = character.species)
+        if (character.type.isNotBlank()) {
+            InfoRow(label = "Type", value = character.type)
+        }
+    }
+}
+
+@Composable
+private fun LocationInfoSection(character: Character) {
+    InfoSection(title = "위치 정보") {
+        InfoRow(label = "Origin", value = character.origin.name)
+        InfoRow(label = "Location", value = character.location.name)
+    }
+}
+
+@Composable
+private fun EpisodeInfoSection(episodeCount: Int) {
+    InfoSection(title = "출연 정보") {
+        InfoRow(label = "Episodes", value = "${episodeCount}개 에피소드 출연")
     }
 }
 
@@ -240,16 +336,6 @@ private fun InfoRow(
             style = DagloTheme.typography.bodyMediumR,
             color = DagloTheme.colors.onBackground,
         )
-    }
-}
-
-@Composable
-private fun LoadingContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        DagloProgress()
     }
 }
 
