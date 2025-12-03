@@ -43,7 +43,7 @@ fun DagloTopBar(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(DagloTheme.colors.surface),
+            .background(DagloTheme.colors.background),
     ) {
         when (navigationType) {
             TopAppBarNavigationType.Back -> {
