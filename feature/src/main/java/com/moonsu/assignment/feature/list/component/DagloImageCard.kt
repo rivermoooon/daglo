@@ -1,5 +1,12 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class)
+
 package com.moonsu.assignment.feature.list.component
 
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -44,6 +52,9 @@ fun DagloImageCard(
     status: String,
     gender: String,
     modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    sharedTransitionKey: String? = null,
+    animatedContentScope: AnimatedContentScope? = null,
     onClick: (() -> Unit)? = null,
     cornerRadius: Dp = 14.dp,
     elevation: Dp = 4.dp,
@@ -53,15 +64,41 @@ fun DagloImageCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPreview = LocalInspectionMode.current
 
-    Box(
-        modifier = modifier
+    val boxModifier = if (
+        sharedTransitionScope != null &&
+        sharedTransitionKey != null &&
+        animatedContentScope != null
+    ) {
+        with(sharedTransitionScope) {
+            modifier
+                .fillMaxWidth()
+                .height(height)
+                .sharedElement(
+                    sharedContentState = rememberSharedContentState(key = sharedTransitionKey),
+                    animatedVisibilityScope = animatedContentScope,
+                    boundsTransform = { _, _ ->
+                        tween(
+                            durationMillis = 300,
+                            easing = androidx.compose.animation.core.FastOutSlowInEasing,
+                        )
+                    },
+                )
+                .shadow(elevation = elevation, shape = shape)
+                .clip(shape)
+                .background(DagloColor.Gray900)
+                .clickableIfNotNull(onClick, interactionSource)
+        }
+    } else {
+        modifier
             .fillMaxWidth()
             .height(height)
             .shadow(elevation = elevation, shape = shape)
             .clip(shape)
             .background(DagloColor.Gray900)
-            .clickableIfNotNull(onClick, interactionSource),
-    ) {
+            .clickableIfNotNull(onClick, interactionSource)
+    }
+
+    Box(modifier = boxModifier) {
         CharacterImage(
             imageUrl = imageUrl,
             isPreview = isPreview,
@@ -94,6 +131,7 @@ private fun CharacterImage(
     } else {
         DagloImage(
             model = imageUrl,
+            contentScale = ContentScale.Crop,
             modifier = modifier,
         )
     }
@@ -177,13 +215,15 @@ private fun Modifier.clickableIfNotNull(
 @Composable
 private fun PreviewDagloImageCardAlive() {
     BasePreview {
-        DagloImageCard(
-            imageUrl = "https://rickandmortyapi.com/api/character/avatar/1.jpeg",
-            name = "Rick Sanchez",
-            status = "Alive",
-            gender = "Male",
-            onClick = {},
-        )
+        SharedTransitionLayout {
+            DagloImageCard(
+                imageUrl = "https://rickandmortyapi.com/api/character/avatar/1.jpeg",
+                name = "Rick Sanchez",
+                status = "Alive",
+                gender = "Male",
+                onClick = {},
+            )
+        }
     }
 }
 
@@ -191,13 +231,15 @@ private fun PreviewDagloImageCardAlive() {
 @Composable
 private fun PreviewDagloImageCardDead() {
     BasePreview {
-        DagloImageCard(
-            imageUrl = "https://rickandmortyapi.com/api/character/avatar/2.jpeg",
-            name = "Morty Smith",
-            status = "Dead",
-            gender = "Male",
-            onClick = {},
-        )
+        SharedTransitionLayout {
+            DagloImageCard(
+                imageUrl = "https://rickandmortyapi.com/api/character/avatar/2.jpeg",
+                name = "Morty Smith",
+                status = "Dead",
+                gender = "Male",
+                onClick = {},
+            )
+        }
     }
 }
 
@@ -205,12 +247,14 @@ private fun PreviewDagloImageCardDead() {
 @Composable
 private fun PreviewDagloImageCardUnknown() {
     BasePreview {
-        DagloImageCard(
-            imageUrl = "https://rickandmortyapi.com/api/character/avatar/3.jpeg",
-            name = "Summer Smith",
-            status = "unknown",
-            gender = "Female",
-            onClick = {},
-        )
+        SharedTransitionLayout {
+            DagloImageCard(
+                imageUrl = "https://rickandmortyapi.com/api/character/avatar/3.jpeg",
+                name = "Summer Smith",
+                status = "unknown",
+                gender = "Female",
+                onClick = {},
+            )
+        }
     }
 }

@@ -1,5 +1,10 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+
 package com.moonsu.assignment.feature.list
 
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,7 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -20,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -30,41 +40,62 @@ import com.moonsu.assignment.core.designsystem.component.DagloProgress
 import com.moonsu.assignment.core.designsystem.component.DagloTopBar
 import com.moonsu.assignment.core.designsystem.component.TopAppBarNavigationType
 import com.moonsu.assignment.core.designsystem.foundation.DagloTheme
+import com.moonsu.assignment.domain.Character
 import com.moonsu.assignment.feature.list.component.DagloImageCard
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 
 @Composable
-internal fun CharacterListRoute(
+fun CharacterListRoute(
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
     viewModel: CharacterListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     CharacterListScreen(
         state = state,
-        onIntent = viewModel::onIntent,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedContentScope = animatedContentScope,
+        onRefresh = { viewModel.onIntent(CharacterListIntent.Refresh) },
+        onCharacterClick = { id -> viewModel.onIntent(CharacterListIntent.OnCharacterClick(id)) },
+        onSearchClick = { viewModel.onIntent(CharacterListIntent.OnSearchClick) },
+        onLoadMore = { viewModel.onIntent(CharacterListIntent.LoadMoreCharacters) },
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CharacterListScreen(
     state: CharacterListUiState,
-    onIntent: (CharacterListIntent) -> Unit,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
+    onRefresh: () -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    onSearchClick: () -> Unit,
+    onLoadMore: () -> Unit,
 ) {
     val listState = rememberLazyListState()
 
-    // 스크롤 위치 기반 페이지네이션 트리거
-    val reachedBottom by remember {
+    val shouldLoadMore by remember {
         derivedStateOf {
-            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val totalItems = listState.layoutInfo.totalItemsCount
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val totalItems = layoutInfo.totalItemsCount
+
             totalItems > 0 && lastVisibleItem >= totalItems - 3
         }
     }
 
-    LaunchedEffect(reachedBottom, state.isLoadingMore, state.hasMorePages) {
-        if (reachedBottom && !state.isLoadingMore && state.hasMorePages && state.characters.isNotEmpty()) {
-            onIntent(CharacterListIntent.LoadMoreCharacters)
-        }
+    LaunchedEffect(listState) {
+        snapshotFlow { shouldLoadMore }
+            .distinctUntilChanged()
+            .filter {
+                it &&
+                    !state.isLoadingMore &&
+                    state.hasMorePages &&
+                    state.characters.isNotEmpty()
+            }
+            .collect { onLoadMore() }
     }
 
     Column(
@@ -72,52 +103,85 @@ private fun CharacterListScreen(
             .fillMaxSize()
             .background(DagloTheme.colors.background),
     ) {
-        DagloTopBar(
-            title = "캐릭터 목록",
-            navigationType = TopAppBarNavigationType.None,
-        )
+        CharacterListTopBar(onSearchClick = onSearchClick)
 
         Box(modifier = Modifier.weight(1f)) {
             when {
-                state.isInitialLoading -> {
-                    InitialLoadingContent()
-                }
+                state.isInitialLoading -> InitialLoadingContent()
+                state.showErrorState -> ErrorContent(
+                    message = state.error ?: "오류가 발생했습니다.",
+                    onRetry = onRefresh,
+                )
 
-                state.showErrorState -> {
-                    ErrorContent(
-                        message = state.error ?: "오류가 발생했습니다.",
-                        onRetry = { onIntent(CharacterListIntent.Refresh) },
-                    )
-                }
-
-                state.showEmptyState -> {
-                    EmptyContent()
-                }
-
-                else -> {
-                    PullToRefreshBox(
-                        isRefreshing = state.isLoading && state.characters.isNotEmpty(),
-                        onRefresh = { onIntent(CharacterListIntent.Refresh) },
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        CharacterListContent(
-                            state = state,
-                            listState = listState,
-                            onCharacterClick = { id ->
-                                onIntent(CharacterListIntent.OnCharacterClick(id))
-                            },
-                        )
-                    }
-                }
+                state.showEmptyState -> EmptyContent()
+                else -> CharacterListWithRefresh(
+                    characters = state.characters,
+                    isRefreshing = state.isLoading && state.characters.isNotEmpty(),
+                    isLoadingMore = state.isLoadingMore,
+                    listState = listState,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope,
+                    onRefresh = onRefresh,
+                    onCharacterClick = onCharacterClick,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CharacterListContent(
-    state: CharacterListUiState,
+private fun CharacterListTopBar(
+    onSearchClick: () -> Unit,
+) {
+    DagloTopBar(
+        title = "캐릭터 목록",
+        navigationType = TopAppBarNavigationType.None,
+        actionButtons = {
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "검색",
+                    tint = DagloTheme.colors.onSurface,
+                )
+            }
+        },
+    )
+}
+
+@Composable
+private fun CharacterListWithRefresh(
+    characters: List<Character>,
+    isRefreshing: Boolean,
+    isLoadingMore: Boolean,
     listState: LazyListState,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
+    onRefresh: () -> Unit,
+    onCharacterClick: (Int) -> Unit,
+) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        CharacterListContent(
+            characters = characters,
+            isLoadingMore = isLoadingMore,
+            listState = listState,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedContentScope = animatedContentScope,
+            onCharacterClick = onCharacterClick,
+        )
+    }
+}
+
+@Composable
+private fun CharacterListContent(
+    characters: List<Character>,
+    isLoadingMore: Boolean,
+    listState: LazyListState,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
     onCharacterClick: (Int) -> Unit,
 ) {
     LazyColumn(
@@ -127,32 +191,56 @@ private fun CharacterListContent(
         modifier = Modifier.fillMaxSize(),
     ) {
         gridTwoColumns(
-            itemCount = state.characters.size,
-            key = { state.characters[it].id },
+            itemCount = characters.size,
+            key = { characters[it].id },
         ) { index ->
-            val character = state.characters[index]
-            DagloImageCard(
-                imageUrl = character.image,
-                name = character.name,
-                status = character.status,
-                gender = character.gender,
-                onClick = { onCharacterClick(character.id) },
+            CharacterGridItem(
+                character = characters[index],
+                sharedTransitionScope = sharedTransitionScope,
+                animatedContentScope = animatedContentScope,
+                onCharacterClick = onCharacterClick,
                 modifier = Modifier.weight(1f),
             )
         }
 
-        if (state.isLoadingMore) {
+        if (isLoadingMore) {
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    DagloProgress()
-                }
+                LoadingMoreIndicator()
             }
         }
+    }
+}
+
+@Composable
+private fun CharacterGridItem(
+    character: Character,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
+    onCharacterClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DagloImageCard(
+        imageUrl = character.image,
+        name = character.name,
+        status = character.status,
+        gender = character.gender,
+        onClick = { onCharacterClick(character.id) },
+        sharedTransitionScope = sharedTransitionScope,
+        sharedTransitionKey = "character-${character.id}",
+        animatedContentScope = animatedContentScope,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun LoadingMoreIndicator() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        DagloProgress()
     }
 }
 
