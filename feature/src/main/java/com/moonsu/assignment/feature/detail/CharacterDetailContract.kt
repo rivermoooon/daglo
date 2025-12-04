@@ -8,6 +8,7 @@ import com.moonsu.assignment.feature.model.CharacterDetailUiModel
 data class CharacterDetailUiState(
     val isLoading: Boolean = false,
     val character: CharacterDetailUiModel? = null,
+    val initialImageUrl: String = "",
     val error: String? = null,
 ) : UiState {
     val showLoadingState: Boolean

@@ -86,6 +86,7 @@ private fun CharacterDetailScreen(
 
                 else -> CharacterDetailContent(
                     character = state.character,
+                    initialImageUrl = state.initialImageUrl,
                     characterId = characterId,
                     scrollState = scrollState,
                     sharedTransitionScope = sharedTransitionScope,
@@ -111,6 +112,7 @@ private fun CharacterDetailTopBar(
 @Composable
 private fun CharacterDetailContent(
     character: CharacterDetailUiModel?,
+    initialImageUrl: String,
     characterId: Int,
     scrollState: ScrollState,
     sharedTransitionScope: SharedTransitionScope,
@@ -122,7 +124,7 @@ private fun CharacterDetailContent(
             .verticalScroll(scrollState),
     ) {
         CharacterImage(
-            character = character,
+            imageUrl = character?.imageUrl ?: initialImageUrl,
             characterId = characterId,
             sharedTransitionScope = sharedTransitionScope,
             animatedContentScope = animatedContentScope,
@@ -138,14 +140,11 @@ private fun CharacterDetailContent(
 
 @Composable
 private fun CharacterImage(
-    character: CharacterDetailUiModel?,
+    imageUrl: String,
     characterId: Int,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
 ) {
-    val imageUrl = character?.imageUrl
-        ?: "https://rickandmortyapi.com/api/character/avatar/${(characterId % 826) + 1}.jpeg"
-
     DagloImage(
         model = imageUrl,
         contentScale = ContentScale.Crop,
