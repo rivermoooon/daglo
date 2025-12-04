@@ -1,6 +1,8 @@
 package com.moonsu.assignment.feature.list
 
+import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.moonsu.assignment.core.common.base.BaseViewModel
 import com.moonsu.assignment.core.navigation.DagloRoute
 import com.moonsu.assignment.core.navigation.NavigationEvent
@@ -18,24 +20,16 @@ class CharacterListViewModel @Inject constructor(
 ) : BaseViewModel<CharacterListUiState, CharacterListIntent, CharacterListEffect>(
     initialState = CharacterListUiState(),
 ) {
-    val pagedCharacters: Flow<PagingData<Character>> = characterRepository.getPagedCharacters()
+
+    val pagedCharacters: Flow<PagingData<Character>> =
+        characterRepository.getPagedCharacters()
+            .cachedIn(viewModelScope)
 
     override suspend fun processIntent(intent: CharacterListIntent) {
         when (intent) {
-            is CharacterListIntent.Refresh -> refresh()
             is CharacterListIntent.OnCharacterClick -> navigateToDetail(intent.characterId)
             is CharacterListIntent.OnSearchClick -> navigateToSearch()
-            is CharacterListIntent.LoadCharacters -> {
-                // PagingData는 자동으로 로드되므로 아무 작업도 하지 않음
-            }
-            is CharacterListIntent.LoadMoreCharacters -> {
-                // PagingData는 자동으로 로드되므로 아무 작업도 하지 않음
-            }
         }
-    }
-
-    private fun refresh() {
-        // PagingData의 refresh는 UI에서 collectAsLazyPagingItems().refresh()로 처리
     }
 
     private fun navigateToDetail(characterId: Int) {
