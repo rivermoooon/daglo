@@ -1,21 +1,25 @@
 package com.moonsu.assignment.feature.list
 
+import androidx.lifecycle.viewModelScope
 import com.moonsu.assignment.core.common.base.BaseViewModel
 import com.moonsu.assignment.core.navigation.DagloRoute
 import com.moonsu.assignment.core.navigation.NavigationEvent
 import com.moonsu.assignment.core.navigation.NavigationHelper
-import com.moonsu.assignment.domain.Character
-import com.moonsu.assignment.domain.Location
-import com.moonsu.assignment.domain.Origin
+import com.moonsu.assignment.domain.DataResource
+import com.moonsu.assignment.domain.model.Character
+import com.moonsu.assignment.domain.model.Location
+import com.moonsu.assignment.domain.model.Origin
+import com.moonsu.assignment.domain.repository.CharacterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class CharacterListViewModel @Inject constructor(
     private val navigationHelper: NavigationHelper,
-    // TODO: UseCase 주입
-    // private val getCharactersUseCase: GetCharactersUseCase,
+    private val characterRepository: CharacterRepository,
 ) : BaseViewModel<CharacterListUiState, CharacterListIntent, CharacterListEffect>(
     initialState = CharacterListUiState(),
 ) {
@@ -33,23 +37,45 @@ class CharacterListViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadCharacters() {
+    private fun loadCharacters() {
         setState { copy(isLoading = true, error = null) }
 
-        // TODO: UseCase 연동
-        // runCatching { getCharactersUseCase(page = 1) }
-        //     .onSuccess { characters -> setState { copy(isLoading = false, characters = characters) } }
-        //     .onFailure { e -> setState { copy(isLoading = false, error = e.message) } }
-
-        // 더미 데이터로 UI 확인
-        delay(1000)
-        setState {
-            copy(
-                isLoading = false,
-                characters = createDummyCharacters(),
-                currentPage = 1,
-                hasMorePages = true,
-            )
+        viewModelScope.launch {
+            characterRepository.getCharacters(page = 1)
+                .catch { e ->
+                    setState {
+                        copy(
+                            isLoading = false,
+                            error = e.message ?: "오류가 발생했습니다.",
+                        )
+                    }
+                }
+                .collect { resource ->
+                    when (resource) {
+                        is DataResource.Loading -> {
+                            setState { copy(isLoading = true, error = null) }
+                        }
+                        is DataResource.Success -> {
+                            setState {
+                                copy(
+                                    isLoading = false,
+                                    characters = resource.data,
+                                    currentPage = 1,
+                                    hasMorePages = true, // TODO: 페이징 정보 연동
+                                    error = null,
+                                )
+                            }
+                        }
+                        is DataResource.Error -> {
+                            setState {
+                                copy(
+                                    isLoading = false,
+                                    error = resource.throwable.message ?: "오류가 발생했습니다.",
+                                )
+                            }
+                        }
+                    }
+                }
         }
     }
 
@@ -61,12 +87,31 @@ class CharacterListViewModel @Inject constructor(
 
         val nextPage = currentState.currentPage + 1
 
-        // TODO: UseCase 연동
-        // runCatching { getCharactersUseCase(page = nextPage) }
-        //     .onSuccess { newCharacters -> ... }
-        //     .onFailure { ... }
+        // TODO: 페이징 구현
+        // viewModelScope.launch {
+        //     characterRepository.getCharacters(page = nextPage)
+        //         .collect { resource ->
+        //             when (resource) {
+        //                 is DataResource.Success -> {
+        //                     setState {
+        //                         copy(
+        //                             isLoadingMore = false,
+        //                             characters = characters + resource.data,
+        //                             currentPage = nextPage,
+        //                             hasMorePages = true, // TODO: 페이징 정보 연동
+        //                         )
+        //                     }
+        //                 }
+        //                 is DataResource.Error -> {
+        //                     setState { copy(isLoadingMore = false) }
+        //                 }
+        //                 else -> {}
+        //             }
+        //         }
+        //     }
+        // }
 
-        // 더미 데이터로 페이지네이션 확인
+        // 임시로 더미 데이터 사용
         delay(1000)
         setState {
             copy(
