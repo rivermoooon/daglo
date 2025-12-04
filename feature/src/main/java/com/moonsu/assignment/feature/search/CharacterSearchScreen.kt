@@ -30,7 +30,7 @@ import com.moonsu.assignment.core.designsystem.component.DagloTextField
 import com.moonsu.assignment.core.designsystem.component.DagloTopBar
 import com.moonsu.assignment.core.designsystem.component.TopAppBarNavigationType
 import com.moonsu.assignment.core.designsystem.foundation.DagloTheme
-import com.moonsu.assignment.domain.Character
+import com.moonsu.assignment.domain.model.Character
 import com.moonsu.assignment.feature.list.component.DagloImageCard
 
 @Composable

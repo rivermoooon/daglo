@@ -5,9 +5,9 @@ import com.moonsu.assignment.core.common.base.BaseViewModel
 import com.moonsu.assignment.core.navigation.DagloRoute
 import com.moonsu.assignment.core.navigation.NavigationEvent
 import com.moonsu.assignment.core.navigation.NavigationHelper
-import com.moonsu.assignment.domain.Character
-import com.moonsu.assignment.domain.Location
-import com.moonsu.assignment.domain.Origin
+import com.moonsu.assignment.domain.model.Character
+import com.moonsu.assignment.domain.model.Location
+import com.moonsu.assignment.domain.model.Origin
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay

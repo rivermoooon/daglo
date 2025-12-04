@@ -38,7 +38,7 @@ import com.moonsu.assignment.core.designsystem.component.DagloTopBar
 import com.moonsu.assignment.core.designsystem.component.TopAppBarNavigationType
 import com.moonsu.assignment.core.designsystem.foundation.DagloColor
 import com.moonsu.assignment.core.designsystem.foundation.DagloTheme
-import com.moonsu.assignment.domain.Character
+import com.moonsu.assignment.domain.model.Character
 
 @Composable
 fun CharacterDetailRoute(
