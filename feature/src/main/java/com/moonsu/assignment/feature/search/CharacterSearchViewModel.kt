@@ -7,8 +7,8 @@ import com.moonsu.assignment.core.navigation.NavigationEvent
 import com.moonsu.assignment.core.navigation.NavigationHelper
 import com.moonsu.assignment.domain.DataResource
 import com.moonsu.assignment.domain.repository.CharacterRepository
+import com.moonsu.assignment.feature.model.toSearchItems
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@ExperimentalCoroutinesApi
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class CharacterSearchViewModel @Inject constructor(
@@ -84,10 +83,11 @@ class CharacterSearchViewModel @Inject constructor(
                             setState { copy(isSearching = true, error = null) }
                         }
                         is DataResource.Success -> {
+                            val searchItems = resource.data.toSearchItems()
                             setState {
                                 copy(
                                     isSearching = false,
-                                    searchResults = resource.data,
+                                    searchResults = searchItems,
                                     error = null,
                                 )
                             }
