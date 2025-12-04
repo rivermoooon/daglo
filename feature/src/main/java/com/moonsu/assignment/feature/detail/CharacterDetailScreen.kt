@@ -38,7 +38,7 @@ import com.moonsu.assignment.core.designsystem.component.DagloTopBar
 import com.moonsu.assignment.core.designsystem.component.TopAppBarNavigationType
 import com.moonsu.assignment.core.designsystem.foundation.DagloColor
 import com.moonsu.assignment.core.designsystem.foundation.DagloTheme
-import com.moonsu.assignment.domain.model.Character
+import com.moonsu.assignment.feature.model.CharacterDetailUiModel
 
 @Composable
 fun CharacterDetailRoute(
@@ -110,7 +110,7 @@ private fun CharacterDetailTopBar(
 
 @Composable
 private fun CharacterDetailContent(
-    character: Character?,
+    character: CharacterDetailUiModel?,
     characterId: Int,
     scrollState: ScrollState,
     sharedTransitionScope: SharedTransitionScope,
@@ -138,12 +138,12 @@ private fun CharacterDetailContent(
 
 @Composable
 private fun CharacterImage(
-    character: Character?,
+    character: CharacterDetailUiModel?,
     characterId: Int,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
 ) {
-    val imageUrl = character?.image
+    val imageUrl = character?.imageUrl
         ?: "https://rickandmortyapi.com/api/character/avatar/${(characterId % 826) + 1}.jpeg"
 
     DagloImage(
@@ -159,7 +159,7 @@ private fun CharacterImage(
 }
 
 @Composable
-private fun CharacterInfo(character: Character) {
+private fun CharacterInfo(character: CharacterDetailUiModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -177,8 +177,8 @@ private fun CharacterInfo(character: Character) {
 
         LocationInfoSection(character = character)
 
-        if (character.episode.isNotEmpty()) {
-            EpisodeInfoSection(episodeCount = character.episode.size)
+        if (character.episodeCount > 0) {
+            EpisodeInfoSection(episodeCount = character.episodeCount)
         }
     }
 }
@@ -275,7 +275,7 @@ private data class StatusColors(
 )
 
 @Composable
-private fun BasicInfoSection(character: Character) {
+private fun BasicInfoSection(character: CharacterDetailUiModel) {
     InfoSection(title = "기본 정보") {
         InfoRow(label = "Gender", value = character.gender)
         InfoRow(label = "Species", value = character.species)
@@ -286,10 +286,10 @@ private fun BasicInfoSection(character: Character) {
 }
 
 @Composable
-private fun LocationInfoSection(character: Character) {
+private fun LocationInfoSection(character: CharacterDetailUiModel) {
     InfoSection(title = "위치 정보") {
-        InfoRow(label = "Origin", value = character.origin.name)
-        InfoRow(label = "Location", value = character.location.name)
+        InfoRow(label = "Origin", value = character.originName)
+        InfoRow(label = "Location", value = character.locationName)
     }
 }
 

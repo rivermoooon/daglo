@@ -3,11 +3,11 @@ package com.moonsu.assignment.feature.detail
 import com.moonsu.assignment.core.common.base.SideEffect
 import com.moonsu.assignment.core.common.base.UiIntent
 import com.moonsu.assignment.core.common.base.UiState
-import com.moonsu.assignment.domain.model.Character
+import com.moonsu.assignment.feature.model.CharacterDetailUiModel
 
 data class CharacterDetailUiState(
     val isLoading: Boolean = false,
-    val character: Character? = null,
+    val character: CharacterDetailUiModel? = null,
     val error: String? = null,
 ) : UiState {
     val showLoadingState: Boolean
