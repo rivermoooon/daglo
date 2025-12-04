@@ -35,8 +35,8 @@ import com.moonsu.assignment.core.designsystem.component.DagloProgress
 import com.moonsu.assignment.core.designsystem.component.DagloTopBar
 import com.moonsu.assignment.core.designsystem.component.TopAppBarNavigationType
 import com.moonsu.assignment.core.designsystem.foundation.DagloTheme
-import com.moonsu.assignment.domain.model.Character
 import com.moonsu.assignment.feature.list.component.DagloImageCard
+import com.moonsu.assignment.feature.model.CharacterListItem
 
 @Composable
 fun CharacterListRoute(
@@ -57,7 +57,7 @@ fun CharacterListRoute(
 
 @Composable
 private fun CharacterListScreen(
-    pagingItems: LazyPagingItems<Character>,
+    pagingItems: LazyPagingItems<CharacterListItem>,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     onCharacterClick: (Int) -> Unit,
@@ -118,7 +118,7 @@ private fun CharacterListTopBar(
 
 @Composable
 private fun CharacterListWithRefresh(
-    pagingItems: LazyPagingItems<Character>,
+    pagingItems: LazyPagingItems<CharacterListItem>,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     onCharacterClick: (Int) -> Unit,
@@ -142,7 +142,7 @@ private fun CharacterListWithRefresh(
 
 @Composable
 private fun CharacterListContent(
-    pagingItems: LazyPagingItems<Character>,
+    pagingItems: LazyPagingItems<CharacterListItem>,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     onCharacterClick: (Int) -> Unit,
@@ -156,10 +156,10 @@ private fun CharacterListContent(
             itemCount = pagingItems.itemCount,
             key = { pagingItems[it]?.id ?: it },
         ) { index ->
-            val character = pagingItems[index]
-            if (character != null) {
+            val item = pagingItems[index]
+            if (item != null) {
                 CharacterGridItem(
-                    character = character,
+                    item = item,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope,
                     onCharacterClick = onCharacterClick,
@@ -191,20 +191,20 @@ private fun CharacterListContent(
 
 @Composable
 private fun CharacterGridItem(
-    character: Character,
+    item: CharacterListItem,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     onCharacterClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     DagloImageCard(
-        imageUrl = character.image,
-        name = character.name,
-        status = character.status,
-        gender = character.gender,
-        onClick = { onCharacterClick(character.id) },
+        imageUrl = item.imageUrl,
+        name = item.name,
+        status = item.status,
+        gender = item.gender,
+        onClick = { onCharacterClick(item.id) },
         sharedTransitionScope = sharedTransitionScope,
-        sharedTransitionKey = "character-${character.id}",
+        sharedTransitionKey = "character-${item.id}",
         animatedContentScope = animatedContentScope,
         modifier = modifier,
     )
