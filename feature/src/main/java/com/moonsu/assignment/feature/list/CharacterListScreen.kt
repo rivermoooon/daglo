@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -46,14 +45,11 @@ fun CharacterListRoute(
     viewModel: CharacterListViewModel = hiltViewModel(),
 ) {
     val pagingItems = viewModel.pagedCharacters.collectAsLazyPagingItems()
-    val state by viewModel.state.collectAsStateWithLifecycle()
 
     CharacterListScreen(
         pagingItems = pagingItems,
-        state = state,
         sharedTransitionScope = sharedTransitionScope,
         animatedContentScope = animatedContentScope,
-        onRefresh = { pagingItems.refresh() },
         onCharacterClick = { id -> viewModel.onIntent(CharacterListIntent.OnCharacterClick(id)) },
         onSearchClick = { viewModel.onIntent(CharacterListIntent.OnSearchClick) },
     )
@@ -62,16 +58,15 @@ fun CharacterListRoute(
 @Composable
 private fun CharacterListScreen(
     pagingItems: LazyPagingItems<Character>,
-    state: CharacterListUiState,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onRefresh: () -> Unit,
     onCharacterClick: (Int) -> Unit,
     onSearchClick: () -> Unit,
 ) {
-    val isLoading = pagingItems.loadState.refresh is LoadState.Loading
-    val isError = pagingItems.loadState.refresh is LoadState.Error
-    val isEmpty = pagingItems.itemCount == 0 && !isLoading && !isError
+    val refreshState = pagingItems.loadState.refresh
+    val isInitialLoading = refreshState is LoadState.Loading && pagingItems.itemCount == 0
+    val isError = refreshState is LoadState.Error
+    val isEmpty = pagingItems.itemCount == 0 && refreshState is LoadState.NotLoading
 
     Column(
         modifier = Modifier
@@ -82,18 +77,19 @@ private fun CharacterListScreen(
 
         Box(modifier = Modifier.weight(1f)) {
             when {
-                isLoading && pagingItems.itemCount == 0 -> InitialLoadingContent()
-                isError -> ErrorContent(
-                    message = state.error ?: "오류가 발생했습니다.",
-                    onRetry = onRefresh,
-                )
+                isInitialLoading -> InitialLoadingContent()
+                isError -> {
+                    val error = (refreshState as LoadState.Error).error
+                    ErrorContent(
+                        message = error.message ?: "오류가 발생했습니다.",
+                        onRetry = { pagingItems.retry() },
+                    )
+                }
                 isEmpty -> EmptyContent()
                 else -> CharacterListWithRefresh(
                     pagingItems = pagingItems,
-                    isRefreshing = isLoading && pagingItems.itemCount > 0,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope,
-                    onRefresh = onRefresh,
                     onCharacterClick = onCharacterClick,
                 )
             }
@@ -123,15 +119,16 @@ private fun CharacterListTopBar(
 @Composable
 private fun CharacterListWithRefresh(
     pagingItems: LazyPagingItems<Character>,
-    isRefreshing: Boolean,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onRefresh: () -> Unit,
     onCharacterClick: (Int) -> Unit,
 ) {
+    val isRefreshing = pagingItems.loadState.refresh is LoadState.Loading &&
+        pagingItems.itemCount > 0
+
     PullToRefreshBox(
         isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
+        onRefresh = { pagingItems.refresh() },
         modifier = Modifier.fillMaxSize(),
     ) {
         CharacterListContent(
@@ -179,13 +176,15 @@ private fun CharacterListContent(
             }
             is LoadState.Error -> {
                 item {
-                    ErrorItem(
+                    AppendErrorItem(
                         message = appendState.error.message ?: "오류가 발생했습니다.",
                         onRetry = { pagingItems.retry() },
                     )
                 }
             }
-            else -> {}
+            is LoadState.NotLoading -> {
+                // 더 이상 로드할 데이터가 없음
+            }
         }
     }
 }
@@ -277,7 +276,7 @@ private fun EmptyContent() {
 }
 
 @Composable
-private fun ErrorItem(
+private fun AppendErrorItem(
     message: String,
     onRetry: () -> Unit,
 ) {
