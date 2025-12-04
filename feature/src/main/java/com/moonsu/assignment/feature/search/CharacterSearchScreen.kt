@@ -30,8 +30,8 @@ import com.moonsu.assignment.core.designsystem.component.DagloTextField
 import com.moonsu.assignment.core.designsystem.component.DagloTopBar
 import com.moonsu.assignment.core.designsystem.component.TopAppBarNavigationType
 import com.moonsu.assignment.core.designsystem.foundation.DagloTheme
-import com.moonsu.assignment.domain.model.Character
 import com.moonsu.assignment.feature.list.component.DagloImageCard
+import com.moonsu.assignment.feature.model.CharacterSearchItem
 
 @Composable
 internal fun CharacterSearchRoute(
@@ -122,7 +122,7 @@ private fun SearchTextField(
 
 @Composable
 private fun SearchResultsContent(
-    searchResults: List<Character>,
+    searchResults: List<CharacterSearchItem>,
     listState: LazyListState,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
@@ -139,7 +139,7 @@ private fun SearchResultsContent(
             key = { searchResults[it].id },
         ) { index ->
             SearchResultItem(
-                character = searchResults[index],
+                item = searchResults[index],
                 sharedTransitionScope = sharedTransitionScope,
                 animatedContentScope = animatedContentScope,
                 onCharacterClick = onCharacterClick,
@@ -151,20 +151,20 @@ private fun SearchResultsContent(
 
 @Composable
 private fun SearchResultItem(
-    character: Character,
+    item: CharacterSearchItem,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     onCharacterClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     DagloImageCard(
-        imageUrl = character.image,
-        name = character.name,
-        status = character.status,
-        gender = character.gender,
-        onClick = { onCharacterClick(character.id) },
+        imageUrl = item.imageUrl,
+        name = item.name,
+        status = item.status,
+        gender = item.gender,
+        onClick = { onCharacterClick(item.id) },
         sharedTransitionScope = sharedTransitionScope,
-        sharedTransitionKey = "character-${character.id}",
+        sharedTransitionKey = "character-${item.id}",
         animatedContentScope = animatedContentScope,
         modifier = modifier,
     )

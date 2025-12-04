@@ -9,6 +9,7 @@ import com.moonsu.assignment.core.navigation.NavigationEvent
 import com.moonsu.assignment.core.navigation.NavigationHelper
 import com.moonsu.assignment.domain.DataResource
 import com.moonsu.assignment.domain.repository.CharacterRepository
+import com.moonsu.assignment.feature.model.toDetailUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -57,10 +58,11 @@ class CharacterDetailViewModel @Inject constructor(
                         }
 
                         is DataResource.Success -> {
+                            val uiModel = resource.data.toDetailUiModel()
                             setState {
                                 copy(
                                     isLoading = false,
-                                    character = resource.data,
+                                    character = uiModel,
                                     error = null,
                                 )
                             }
