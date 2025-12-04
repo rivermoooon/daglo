@@ -33,13 +33,13 @@ class CharacterListViewModel @Inject constructor(
 
     override suspend fun processIntent(intent: CharacterListIntent) {
         when (intent) {
-            is CharacterListIntent.OnCharacterClick -> navigateToDetail(intent.characterId)
+            is CharacterListIntent.OnCharacterClick -> navigateToDetail(intent.characterId, intent.imageUrl)
             is CharacterListIntent.OnSearchClick -> navigateToSearch()
         }
     }
 
-    private fun navigateToDetail(characterId: Int) {
-        navigationHelper.navigate(NavigationEvent.To(DagloRoute.CharacterDetail(characterId)))
+    private fun navigateToDetail(characterId: Int, imageUrl: String) {
+        navigationHelper.navigate(NavigationEvent.To(DagloRoute.CharacterDetail(characterId, imageUrl)))
     }
 
     private fun navigateToSearch() {
