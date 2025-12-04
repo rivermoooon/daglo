@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,16 +23,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.moonsu.assignment.core.common.gridTwoColumns
 import com.moonsu.assignment.core.designsystem.component.DagloProgress
 import com.moonsu.assignment.core.designsystem.component.DagloTopBar
@@ -42,8 +37,6 @@ import com.moonsu.assignment.core.designsystem.component.TopAppBarNavigationType
 import com.moonsu.assignment.core.designsystem.foundation.DagloTheme
 import com.moonsu.assignment.domain.model.Character
 import com.moonsu.assignment.feature.list.component.DagloImageCard
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 
 @Composable
 fun CharacterListRoute(
@@ -51,52 +44,29 @@ fun CharacterListRoute(
     animatedContentScope: AnimatedContentScope,
     viewModel: CharacterListViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val pagingItems = viewModel.pagedCharacters.collectAsLazyPagingItems()
 
     CharacterListScreen(
-        state = state,
+        pagingItems = pagingItems,
         sharedTransitionScope = sharedTransitionScope,
         animatedContentScope = animatedContentScope,
-        onRefresh = { viewModel.onIntent(CharacterListIntent.Refresh) },
         onCharacterClick = { id -> viewModel.onIntent(CharacterListIntent.OnCharacterClick(id)) },
         onSearchClick = { viewModel.onIntent(CharacterListIntent.OnSearchClick) },
-        onLoadMore = { viewModel.onIntent(CharacterListIntent.LoadMoreCharacters) },
     )
 }
 
 @Composable
 private fun CharacterListScreen(
-    state: CharacterListUiState,
+    pagingItems: LazyPagingItems<Character>,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onRefresh: () -> Unit,
     onCharacterClick: (Int) -> Unit,
     onSearchClick: () -> Unit,
-    onLoadMore: () -> Unit,
 ) {
-    val listState = rememberLazyListState()
-
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val layoutInfo = listState.layoutInfo
-            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val totalItems = layoutInfo.totalItemsCount
-
-            totalItems > 0 && lastVisibleItem >= totalItems - 3
-        }
-    }
-
-    LaunchedEffect(listState) {
-        snapshotFlow { shouldLoadMore }
-            .distinctUntilChanged()
-            .filter {
-                it &&
-                    !state.isLoadingMore &&
-                    state.hasMorePages &&
-                    state.characters.isNotEmpty()
-            }
-            .collect { onLoadMore() }
-    }
+    val refreshState = pagingItems.loadState.refresh
+    val isInitialLoading = refreshState is LoadState.Loading && pagingItems.itemCount == 0
+    val isError = refreshState is LoadState.Error
+    val isEmpty = pagingItems.itemCount == 0 && refreshState is LoadState.NotLoading
 
     Column(
         modifier = Modifier
@@ -107,21 +77,19 @@ private fun CharacterListScreen(
 
         Box(modifier = Modifier.weight(1f)) {
             when {
-                state.isInitialLoading -> InitialLoadingContent()
-                state.showErrorState -> ErrorContent(
-                    message = state.error ?: "오류가 발생했습니다.",
-                    onRetry = onRefresh,
-                )
-
-                state.showEmptyState -> EmptyContent()
+                isInitialLoading -> InitialLoadingContent()
+                isError -> {
+                    val error = (refreshState as LoadState.Error).error
+                    ErrorContent(
+                        message = error.message ?: "오류가 발생했습니다.",
+                        onRetry = { pagingItems.retry() },
+                    )
+                }
+                isEmpty -> EmptyContent()
                 else -> CharacterListWithRefresh(
-                    characters = state.characters,
-                    isRefreshing = state.isLoading && state.characters.isNotEmpty(),
-                    isLoadingMore = state.isLoadingMore,
-                    listState = listState,
+                    pagingItems = pagingItems,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedContentScope = animatedContentScope,
-                    onRefresh = onRefresh,
                     onCharacterClick = onCharacterClick,
                 )
             }
@@ -150,24 +118,21 @@ private fun CharacterListTopBar(
 
 @Composable
 private fun CharacterListWithRefresh(
-    characters: List<Character>,
-    isRefreshing: Boolean,
-    isLoadingMore: Boolean,
-    listState: LazyListState,
+    pagingItems: LazyPagingItems<Character>,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onRefresh: () -> Unit,
     onCharacterClick: (Int) -> Unit,
 ) {
+    val isRefreshing = pagingItems.loadState.refresh is LoadState.Loading &&
+        pagingItems.itemCount > 0
+
     PullToRefreshBox(
         isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
+        onRefresh = { pagingItems.refresh() },
         modifier = Modifier.fillMaxSize(),
     ) {
         CharacterListContent(
-            characters = characters,
-            isLoadingMore = isLoadingMore,
-            listState = listState,
+            pagingItems = pagingItems,
             sharedTransitionScope = sharedTransitionScope,
             animatedContentScope = animatedContentScope,
             onCharacterClick = onCharacterClick,
@@ -177,35 +142,48 @@ private fun CharacterListWithRefresh(
 
 @Composable
 private fun CharacterListContent(
-    characters: List<Character>,
-    isLoadingMore: Boolean,
-    listState: LazyListState,
+    pagingItems: LazyPagingItems<Character>,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     onCharacterClick: (Int) -> Unit,
 ) {
     LazyColumn(
-        state = listState,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
         gridTwoColumns(
-            itemCount = characters.size,
-            key = { characters[it].id },
+            itemCount = pagingItems.itemCount,
+            key = { pagingItems[it]?.id ?: it },
         ) { index ->
-            CharacterGridItem(
-                character = characters[index],
-                sharedTransitionScope = sharedTransitionScope,
-                animatedContentScope = animatedContentScope,
-                onCharacterClick = onCharacterClick,
-                modifier = Modifier.weight(1f),
-            )
+            val character = pagingItems[index]
+            if (character != null) {
+                CharacterGridItem(
+                    character = character,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedContentScope = animatedContentScope,
+                    onCharacterClick = onCharacterClick,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
 
-        if (isLoadingMore) {
-            item {
-                LoadingMoreIndicator()
+        when (val appendState = pagingItems.loadState.append) {
+            is LoadState.Loading -> {
+                item {
+                    LoadingMoreIndicator()
+                }
+            }
+            is LoadState.Error -> {
+                item {
+                    AppendErrorItem(
+                        message = appendState.error.message ?: "오류가 발생했습니다.",
+                        onRetry = { pagingItems.retry() },
+                    )
+                }
+            }
+            is LoadState.NotLoading -> {
+                // 더 이상 로드할 데이터가 없음
             }
         }
     }
@@ -294,5 +272,36 @@ private fun EmptyContent() {
             style = DagloTheme.typography.bodyMediumR,
             color = DagloTheme.colors.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun AppendErrorItem(
+    message: String,
+    onRetry: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = message,
+                style = DagloTheme.typography.bodyMediumR,
+                color = DagloTheme.colors.onSurfaceVariant,
+            )
+            TextButton(onClick = onRetry) {
+                Text(
+                    text = "다시 시도",
+                    style = DagloTheme.typography.titleSmallB,
+                    color = DagloTheme.colors.primary,
+                )
+            }
+        }
     }
 }

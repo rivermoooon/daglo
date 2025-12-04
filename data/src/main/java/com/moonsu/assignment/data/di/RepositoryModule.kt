@@ -1,5 +1,6 @@
 package com.moonsu.assignment.data.di
 
+import com.moonsu.assignment.core.common.di.DefaultDispatcher
 import com.moonsu.assignment.core.common.di.IoDispatcher
 import com.moonsu.assignment.data.impl.CharacterRepositoryImpl
 import com.moonsu.assignment.data.remote.RemoteCharacterDataSource
@@ -20,5 +21,6 @@ object RepositoryModule {
     fun provideCharacterRepository(
         remote: RemoteCharacterDataSource,
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
-    ): CharacterRepository = CharacterRepositoryImpl(remote, ioDispatcher)
+        @DefaultDispatcher defaultDispatcher: CoroutineDispatcher,
+    ): CharacterRepository = CharacterRepositoryImpl(remote, ioDispatcher, defaultDispatcher)
 }

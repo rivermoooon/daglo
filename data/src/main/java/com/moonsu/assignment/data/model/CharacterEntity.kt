@@ -54,3 +54,15 @@ data class LocationEntity(
         url = url,
     )
 }
+
+data class PageInfoEntity(
+    val count: Int,
+    val pages: Int,
+    val next: String?,
+    val prev: String?,
+)
+
+data class CharacterPageEntity(
+    val info: PageInfoEntity,
+    val results: List<CharacterEntity>,
+)

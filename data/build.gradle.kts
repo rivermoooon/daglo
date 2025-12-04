@@ -15,4 +15,5 @@ dependencies {
     implementation(projects.core.common)
     implementation(libs.retrofit.core)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.paging.runtime)
 }
