@@ -2,15 +2,22 @@ package com.moonsu.assignment.core.network.model
 
 import com.moonsu.assignment.core.network.RemoteMapper
 import com.moonsu.assignment.data.model.CharacterEntity
+import com.moonsu.assignment.data.model.CharacterPageEntity
 import com.moonsu.assignment.data.model.LocationEntity
 import com.moonsu.assignment.data.model.OriginEntity
+import com.moonsu.assignment.data.model.PageInfoEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class CharacterResponse(
     val info: PageInfo,
     val results: List<CharacterDto>,
-)
+) : RemoteMapper<CharacterPageEntity> {
+    override fun toData() = CharacterPageEntity(
+        info = info.toData(),
+        results = results.map { it.toData() },
+    )
+}
 
 @Serializable
 data class PageInfo(
@@ -18,7 +25,14 @@ data class PageInfo(
     val pages: Int,
     val next: String?,
     val prev: String?,
-)
+) : RemoteMapper<PageInfoEntity> {
+    override fun toData() = PageInfoEntity(
+        count = count,
+        pages = pages,
+        next = next,
+        prev = prev,
+    )
+}
 
 @Serializable
 data class CharacterDto(

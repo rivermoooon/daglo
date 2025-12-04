@@ -6,22 +6,8 @@ import com.moonsu.assignment.core.common.base.UiState
 import com.moonsu.assignment.domain.model.Character
 
 data class CharacterListUiState(
-    val isLoading: Boolean = false,
-    val isLoadingMore: Boolean = false,
-    val characters: List<Character> = emptyList(),
-    val currentPage: Int = 1,
-    val hasMorePages: Boolean = true,
     val error: String? = null,
-) : UiState {
-    val isInitialLoading: Boolean
-        get() = isLoading && characters.isEmpty()
-
-    val showEmptyState: Boolean
-        get() = !isLoading && characters.isEmpty() && error == null
-
-    val showErrorState: Boolean
-        get() = !isLoading && characters.isEmpty() && error != null
-}
+) : UiState
 
 sealed interface CharacterListIntent : UiIntent {
     data object LoadCharacters : CharacterListIntent
