@@ -42,8 +42,7 @@ fun DagloImage(
     }
 
     AsyncImage(
-        model = model ?: R.drawable.ic_default,
-        placeholder = painterResource(R.drawable.ic_default),
+        model = model,
         contentScale = contentScale,
         error = if (LocalInspectionMode.current) painterResource(R.drawable.ic_default) else null,
         contentDescription = null,
