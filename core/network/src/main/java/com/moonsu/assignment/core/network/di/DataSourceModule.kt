@@ -1,7 +1,7 @@
 package com.moonsu.assignment.core.network.di
 
 import com.moonsu.assignment.core.network.impl.RemoteCharacterDataSourceImpl
-import com.moonsu.assignment.data.datasource.RemoteCharacterDataSource
+import com.moonsu.assignment.data.remote.RemoteCharacterDataSource
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

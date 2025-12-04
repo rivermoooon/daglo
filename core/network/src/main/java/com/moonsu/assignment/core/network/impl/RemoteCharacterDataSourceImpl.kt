@@ -1,8 +1,8 @@
 package com.moonsu.assignment.core.network.impl
 
 import com.moonsu.assignment.core.network.service.ApiService
-import com.moonsu.assignment.data.datasource.RemoteCharacterDataSource
 import com.moonsu.assignment.data.model.CharacterEntity
+import com.moonsu.assignment.data.remote.RemoteCharacterDataSource
 import javax.inject.Inject
 
 class RemoteCharacterDataSourceImpl @Inject constructor(
