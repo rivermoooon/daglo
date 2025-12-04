@@ -46,7 +46,9 @@ internal fun CharacterSearchRoute(
         sharedTransitionScope = sharedTransitionScope,
         animatedContentScope = animatedContentScope,
         onQueryChange = { query -> viewModel.onIntent(CharacterSearchIntent.OnQueryChange(query)) },
-        onCharacterClick = { id -> viewModel.onIntent(CharacterSearchIntent.OnCharacterClick(id)) },
+        onCharacterClick = { id, imageUrl ->
+            viewModel.onIntent(CharacterSearchIntent.OnCharacterClick(id, imageUrl))
+        },
         onBackClick = { viewModel.onIntent(CharacterSearchIntent.OnBackClick) },
     )
 }
@@ -57,7 +59,7 @@ private fun CharacterSearchScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     onQueryChange: (String) -> Unit,
-    onCharacterClick: (Int) -> Unit,
+    onCharacterClick: (Int, String) -> Unit,
     onBackClick: () -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -126,7 +128,7 @@ private fun SearchResultsContent(
     listState: LazyListState,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onCharacterClick: (Int) -> Unit,
+    onCharacterClick: (Int, String) -> Unit,
 ) {
     LazyColumn(
         state = listState,
@@ -154,7 +156,7 @@ private fun SearchResultItem(
     item: CharacterSearchItem,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onCharacterClick: (Int) -> Unit,
+    onCharacterClick: (Int, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     DagloImageCard(
@@ -162,7 +164,7 @@ private fun SearchResultItem(
         name = item.name,
         status = item.status,
         gender = item.gender,
-        onClick = { onCharacterClick(item.id) },
+        onClick = { onCharacterClick(item.id, item.imageUrl) },
         sharedTransitionScope = sharedTransitionScope,
         sharedTransitionKey = "character-${item.id}",
         animatedContentScope = animatedContentScope,
