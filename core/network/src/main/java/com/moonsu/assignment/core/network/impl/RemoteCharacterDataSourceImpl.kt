@@ -14,4 +14,7 @@ class RemoteCharacterDataSourceImpl @Inject constructor(
 
     override suspend fun getCharacter(id: Int): CharacterEntity =
         api.getCharacter(id).toData()
+
+    override suspend fun searchCharacters(name: String): List<CharacterEntity> =
+        api.searchCharacters(name).results.map { it.toData() }
 }
