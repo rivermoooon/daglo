@@ -50,7 +50,9 @@ fun CharacterListRoute(
         pagingItems = pagingItems,
         sharedTransitionScope = sharedTransitionScope,
         animatedContentScope = animatedContentScope,
-        onCharacterClick = { id -> viewModel.onIntent(CharacterListIntent.OnCharacterClick(id)) },
+        onCharacterClick = { id, imageUrl ->
+            viewModel.onIntent(CharacterListIntent.OnCharacterClick(id, imageUrl))
+        },
         onSearchClick = { viewModel.onIntent(CharacterListIntent.OnSearchClick) },
     )
 }
@@ -60,7 +62,7 @@ private fun CharacterListScreen(
     pagingItems: LazyPagingItems<CharacterListItem>,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onCharacterClick: (Int) -> Unit,
+    onCharacterClick: (Int, String) -> Unit,
     onSearchClick: () -> Unit,
 ) {
     val refreshState = pagingItems.loadState.refresh
@@ -121,7 +123,7 @@ private fun CharacterListWithRefresh(
     pagingItems: LazyPagingItems<CharacterListItem>,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onCharacterClick: (Int) -> Unit,
+    onCharacterClick: (Int, String) -> Unit,
 ) {
     val isRefreshing = pagingItems.loadState.refresh is LoadState.Loading &&
         pagingItems.itemCount > 0
@@ -145,7 +147,7 @@ private fun CharacterListContent(
     pagingItems: LazyPagingItems<CharacterListItem>,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onCharacterClick: (Int) -> Unit,
+    onCharacterClick: (Int, String) -> Unit,
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -174,6 +176,7 @@ private fun CharacterListContent(
                     LoadingMoreIndicator()
                 }
             }
+
             is LoadState.Error -> {
                 item {
                     AppendErrorItem(
@@ -182,6 +185,7 @@ private fun CharacterListContent(
                     )
                 }
             }
+
             is LoadState.NotLoading -> {
                 // 더 이상 로드할 데이터가 없음
             }
@@ -194,7 +198,7 @@ private fun CharacterGridItem(
     item: CharacterListItem,
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
-    onCharacterClick: (Int) -> Unit,
+    onCharacterClick: (Int, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     DagloImageCard(
@@ -202,7 +206,7 @@ private fun CharacterGridItem(
         name = item.name,
         status = item.status,
         gender = item.gender,
-        onClick = { onCharacterClick(item.id) },
+        onClick = { onCharacterClick(item.id, item.imageUrl) },
         sharedTransitionScope = sharedTransitionScope,
         sharedTransitionKey = "character-${item.id}",
         animatedContentScope = animatedContentScope,

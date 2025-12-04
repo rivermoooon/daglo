@@ -27,6 +27,8 @@ class CharacterDetailViewModel @Inject constructor(
         savedStateHandle.toRoute<DagloRoute.CharacterDetail>().characterId
 
     init {
+        val initialImageUrl = savedStateHandle.toRoute<DagloRoute.CharacterDetail>().imageUrl
+        setState { copy(initialImageUrl = initialImageUrl) }
         onIntent(CharacterDetailIntent.LoadCharacter)
     }
 

@@ -23,7 +23,7 @@ data class CharacterSearchUiState(
 
 sealed interface CharacterSearchIntent : UiIntent {
     data class OnQueryChange(val query: String) : CharacterSearchIntent
-    data class OnCharacterClick(val characterId: Int) : CharacterSearchIntent
+    data class OnCharacterClick(val characterId: Int, val imageUrl: String) : CharacterSearchIntent
     data object OnBackClick : CharacterSearchIntent
 }
 

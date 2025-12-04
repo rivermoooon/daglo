@@ -9,7 +9,7 @@ data class CharacterListUiState(
 ) : UiState
 
 sealed interface CharacterListIntent : UiIntent {
-    data class OnCharacterClick(val characterId: Int) : CharacterListIntent
+    data class OnCharacterClick(val characterId: Int, val imageUrl: String) : CharacterListIntent
     data object OnSearchClick : CharacterListIntent
 }
 

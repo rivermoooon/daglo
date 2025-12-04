@@ -36,7 +36,7 @@ class CharacterSearchViewModel @Inject constructor(
     override suspend fun processIntent(intent: CharacterSearchIntent) {
         when (intent) {
             is CharacterSearchIntent.OnQueryChange -> handleQueryChange(intent.query)
-            is CharacterSearchIntent.OnCharacterClick -> navigateToDetail(intent.characterId)
+            is CharacterSearchIntent.OnCharacterClick -> navigateToDetail(intent.characterId, intent.imageUrl)
             is CharacterSearchIntent.OnBackClick -> navigateBack()
         }
     }
@@ -110,8 +110,15 @@ class CharacterSearchViewModel @Inject constructor(
         }
     }
 
-    private fun navigateToDetail(characterId: Int) {
-        navigationHelper.navigate(NavigationEvent.To(DagloRoute.CharacterDetail(characterId)))
+    private fun navigateToDetail(characterId: Int, imageUrl: String) {
+        navigationHelper.navigate(
+            NavigationEvent.To(
+                DagloRoute.CharacterDetail(
+                    characterId = characterId,
+                    imageUrl = imageUrl,
+                ),
+            ),
+        )
     }
 
     private fun navigateBack() {
