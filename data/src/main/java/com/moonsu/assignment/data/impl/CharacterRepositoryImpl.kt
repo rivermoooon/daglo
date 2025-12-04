@@ -25,4 +25,9 @@ class CharacterRepositoryImpl @Inject constructor(
         flowDataResource {
             remote.getCharacter(id).toDomain()
         }.flowOn(ioDispatcher)
+
+    override fun searchCharacters(name: String): Flow<DataResource<List<Character>>> =
+        flowDataResource {
+            remote.searchCharacters(name).toDomainList()
+        }.flowOn(ioDispatcher)
 }

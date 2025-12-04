@@ -17,6 +17,11 @@ interface ApiService {
         @Path("id") id: Int,
     ): CharacterDto
 
+    @GET(CHARACTERS)
+    suspend fun searchCharacters(
+        @Query("name") name: String,
+    ): CharacterResponse
+
     companion object {
         const val CHARACTERS = "character"
         const val CHARACTER_DETAIL = "character/{id}"
