@@ -5,24 +5,26 @@ import com.moonsu.assignment.core.common.base.BaseViewModel
 import com.moonsu.assignment.core.navigation.DagloRoute
 import com.moonsu.assignment.core.navigation.NavigationEvent
 import com.moonsu.assignment.core.navigation.NavigationHelper
-import com.moonsu.assignment.domain.model.Character
-import com.moonsu.assignment.domain.model.Location
-import com.moonsu.assignment.domain.model.Origin
+import com.moonsu.assignment.domain.DataResource
+import com.moonsu.assignment.domain.repository.CharacterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@ExperimentalCoroutinesApi
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class CharacterSearchViewModel @Inject constructor(
     private val navigationHelper: NavigationHelper,
-    // TODO: UseCase 주입
-    // private val searchCharactersUseCase: SearchCharactersUseCase,
+    private val characterRepository: CharacterRepository,
 ) : BaseViewModel<CharacterSearchUiState, CharacterSearchIntent, CharacterSearchEffect>(
     initialState = CharacterSearchUiState(),
 ) {
@@ -61,31 +63,50 @@ class CharacterSearchViewModel @Inject constructor(
             searchQueryFlow
                 .debounce(300L)
                 .distinctUntilChanged()
-                .collect { query ->
+                .flatMapLatest { query ->
                     if (query.isNotEmpty()) {
-                        searchCharacters(query)
+                        characterRepository.searchCharacters(query)
+                    } else {
+                        flowOf(DataResource.Success(emptyList()))
                     }
                 }
-        }
-    }
-
-    private suspend fun searchCharacters(query: String) {
-        // TODO: UseCase 연동
-        // runCatching { searchCharactersUseCase(query) }
-        //     .onSuccess { results -> setState { copy(isSearching = false, searchResults = results) } }
-        //     .onFailure { e -> setState { copy(isSearching = false, error = e.message) } }
-
-        // 더미 데이터로 검색 결과 필터링
-        delay(500)
-        val allCharacters = createDummyCharacters()
-        val filteredResults = allCharacters.filter {
-            it.name.contains(query, ignoreCase = true)
-        }
-        setState {
-            copy(
-                isSearching = false,
-                searchResults = filteredResults,
-            )
+                .catch { e ->
+                    setState {
+                        copy(
+                            isSearching = false,
+                            error = e.message ?: "검색 중 오류가 발생했습니다.",
+                        )
+                    }
+                }
+                .collect { resource ->
+                    when (resource) {
+                        is DataResource.Loading -> {
+                            setState { copy(isSearching = true, error = null) }
+                        }
+                        is DataResource.Success -> {
+                            setState {
+                                copy(
+                                    isSearching = false,
+                                    searchResults = resource.data,
+                                    error = null,
+                                )
+                            }
+                        }
+                        is DataResource.Error -> {
+                            setState {
+                                copy(
+                                    isSearching = false,
+                                    error = resource.throwable.message ?: "검색 중 오류가 발생했습니다.",
+                                )
+                            }
+                            postSideEffect(
+                                CharacterSearchEffect.ShowError(
+                                    resource.throwable.message ?: "검색 실패",
+                                ),
+                            )
+                        }
+                    }
+                }
         }
     }
 
@@ -95,42 +116,5 @@ class CharacterSearchViewModel @Inject constructor(
 
     private fun navigateBack() {
         navigationHelper.navigate(NavigationEvent.Up())
-    }
-
-    // TODO: 서버 연동 시 삭제
-    private fun createDummyCharacters(): List<Character> {
-        val statuses = listOf("Alive", "Dead", "unknown")
-        val genders = listOf("Male", "Female", "unknown")
-        val names = listOf(
-            "Rick Sanchez", "Morty Smith", "Summer Smith", "Beth Smith", "Jerry Smith",
-            "Abadango Cluster Princess", "Abradolf Lincler", "Adjudicator Rick",
-            "Agency Director", "Alan Rails", "Albert Einstein", "Alexander",
-            "Alien Googah", "Alien Morty", "Alien Rick", "Amish Cyborg",
-            "Annie", "Antenna Morty", "Antenna Rick", "Ants in my Eyes Johnson",
-        )
-
-        return names.mapIndexed { index, name ->
-            val id = index + 1
-            Character(
-                id = id,
-                name = name,
-                status = statuses[id % 3],
-                species = "Human",
-                type = "",
-                gender = genders[id % 3],
-                origin = Origin(
-                    name = "Earth",
-                    url = "",
-                ),
-                location = Location(
-                    name = "Earth",
-                    url = "",
-                ),
-                image = "https://rickandmortyapi.com/api/character/avatar/${(id % 826) + 1}.jpeg",
-                episode = emptyList(),
-                url = "",
-                created = "",
-            )
-        }
     }
 }
