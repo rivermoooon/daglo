@@ -1,13 +1,13 @@
 package com.moonsu.assignment.data.paging
 
+import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.moonsu.assignment.data.DataErrorMapper.toAppError
 import com.moonsu.assignment.data.model.CharacterEntity
 import com.moonsu.assignment.data.remote.RemoteCharacterDataSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.io.IOException
 
 class CharacterPagingSource(
     private val remoteDataSource: RemoteCharacterDataSource,
@@ -18,7 +18,7 @@ class CharacterPagingSource(
         return withContext(ioDispatcher) {
             try {
                 val page = params.key ?: STARTING_PAGE_INDEX
-                val response = remoteDataSource.getCharacters(page = page)
+                val response = remoteDataSource.getCharacters(page)
                 val nextKey = if (response.info.next != null) {
                     page + 1
                 } else {
@@ -32,12 +32,14 @@ class CharacterPagingSource(
                     prevKey = prevKey,
                     nextKey = nextKey,
                 )
-            } catch (exception: IOException) {
-                LoadResult.Error(exception)
-            } catch (exception: HttpException) {
-                LoadResult.Error(exception)
-            } catch (exception: Exception) {
-                LoadResult.Error(exception)
+            } catch (e: Exception) {
+                val appError = e.toAppError()
+                Log.e(
+                    "CharacterPagingSource",
+                    "[load] Page ${params.key ?: STARTING_PAGE_INDEX} failed: ${appError.message}",
+                    appError.cause,
+                )
+                LoadResult.Error(appError)
             }
         }
     }
