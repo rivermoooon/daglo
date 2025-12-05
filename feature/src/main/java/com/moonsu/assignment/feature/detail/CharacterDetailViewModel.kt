@@ -3,6 +3,7 @@ package com.moonsu.assignment.feature.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.moonsu.assignment.core.common.AppError
 import com.moonsu.assignment.core.common.base.BaseViewModel
 import com.moonsu.assignment.core.navigation.DagloRoute
 import com.moonsu.assignment.core.navigation.NavigationEvent
@@ -11,7 +12,6 @@ import com.moonsu.assignment.domain.DataResource
 import com.moonsu.assignment.domain.repository.CharacterRepository
 import com.moonsu.assignment.feature.model.toDetailUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -45,14 +45,6 @@ class CharacterDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             characterRepository.getCharacter(characterId)
-                .catch { e ->
-                    setState {
-                        copy(
-                            isLoading = false,
-                            error = e.message ?: "오류가 발생했습니다.",
-                        )
-                    }
-                }
                 .collect { resource ->
                     when (resource) {
                         is DataResource.Loading -> {
@@ -74,14 +66,14 @@ class CharacterDetailViewModel @Inject constructor(
                             setState {
                                 copy(
                                     isLoading = false,
-                                    error = resource.throwable.message ?: "오류가 발생했습니다.",
+                                    error = resource.error.getUserMessage(),
                                 )
                             }
-                            postSideEffect(
-                                CharacterDetailEffect.ShowError(
-                                    resource.throwable.message ?: "캐릭터 로드 실패",
-                                ),
-                            )
+                            if (resource.error is AppError.NetworkError ||
+                                resource.error is AppError.TimeoutError
+                            ) {
+                                postSideEffect(CharacterDetailEffect.ShowError(resource.error))
+                            }
                         }
                     }
                 }

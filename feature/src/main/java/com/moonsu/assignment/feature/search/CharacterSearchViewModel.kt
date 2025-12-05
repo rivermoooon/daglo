@@ -1,6 +1,7 @@
 package com.moonsu.assignment.feature.search
 
 import androidx.lifecycle.viewModelScope
+import com.moonsu.assignment.core.common.AppError
 import com.moonsu.assignment.core.common.base.BaseViewModel
 import com.moonsu.assignment.core.navigation.DagloRoute
 import com.moonsu.assignment.core.navigation.NavigationEvent
@@ -11,7 +12,6 @@ import com.moonsu.assignment.feature.model.toSearchItems
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -69,14 +69,6 @@ class CharacterSearchViewModel @Inject constructor(
                         flowOf(DataResource.Success(emptyList()))
                     }
                 }
-                .catch { e ->
-                    setState {
-                        copy(
-                            isSearching = false,
-                            error = e.message ?: "검색 중 오류가 발생했습니다.",
-                        )
-                    }
-                }
                 .collect { resource ->
                     when (resource) {
                         is DataResource.Loading -> {
@@ -96,14 +88,14 @@ class CharacterSearchViewModel @Inject constructor(
                             setState {
                                 copy(
                                     isSearching = false,
-                                    error = resource.throwable.message ?: "검색 중 오류가 발생했습니다.",
+                                    error = resource.error.getUserMessage(),
                                 )
                             }
-                            postSideEffect(
-                                CharacterSearchEffect.ShowError(
-                                    resource.throwable.message ?: "검색 실패",
-                                ),
-                            )
+                            if (resource.error is AppError.NetworkError ||
+                                resource.error is AppError.TimeoutError
+                            ) {
+                                postSideEffect(CharacterSearchEffect.ShowError(resource.error))
+                            }
                         }
                     }
                 }
