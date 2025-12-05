@@ -1,14 +1,15 @@
 package com.moonsu.assignment
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.moonsu.assignment.core.designsystem.component.DagloSnackBarHost
+import com.moonsu.assignment.core.designsystem.component.SnackBarType
 import com.moonsu.assignment.core.designsystem.foundation.DagloTheme
 import com.moonsu.assignment.core.navigation.NavigationEvent
 import com.moonsu.assignment.core.navigation.NavigationHelper
@@ -18,8 +19,6 @@ fun DagloApp(
     appState: DagloAppState = rememberDagloAppState(),
     navigationHelper: NavigationHelper,
 ) {
-    val snackBarHostState = remember { SnackbarHostState() }
-
     LaunchedEffect(navigationHelper, appState.navController) {
         navigationHelper.navigationFlow.collect { event ->
             when (event) {
@@ -50,18 +49,23 @@ fun DagloApp(
                     }
                 }
             }
-            snackBarHostState.currentSnackbarData?.dismiss()
+            appState.snackbarHostState.currentSnackbarData?.dismiss()
         }
     }
 
     DagloTheme {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
-        ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
             AppNavHost(
                 appState = appState,
-                modifier = Modifier.padding(innerPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.systemBars),
+            )
+
+            DagloSnackBarHost(
+                hostState = appState.snackbarHostState,
+                type = SnackBarType.ERROR,
+                duration = 3000L,
             )
         }
     }

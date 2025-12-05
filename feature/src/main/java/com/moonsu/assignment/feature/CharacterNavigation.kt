@@ -4,6 +4,7 @@ package com.moonsu.assignment.feature
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.material3.SnackbarHostState
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
@@ -15,6 +16,7 @@ import com.moonsu.assignment.feature.search.CharacterSearchRoute
 @OptIn(ExperimentalSharedTransitionApi::class)
 fun NavGraphBuilder.characterNavigation(
     sharedTransitionScope: SharedTransitionScope,
+    snackbarHostState: SnackbarHostState,
 ) {
     // 캐릭터 목록 화면
     composable<DagloRoute.CharacterList> {
@@ -31,6 +33,7 @@ fun NavGraphBuilder.characterNavigation(
             characterId = route.characterId,
             sharedTransitionScope = sharedTransitionScope,
             animatedContentScope = this,
+            snackbarHostState = snackbarHostState,
         )
     }
 
@@ -39,6 +42,7 @@ fun NavGraphBuilder.characterNavigation(
         CharacterSearchRoute(
             sharedTransitionScope = sharedTransitionScope,
             animatedContentScope = this,
+            snackbarHostState = snackbarHostState,
         )
     }
 }
