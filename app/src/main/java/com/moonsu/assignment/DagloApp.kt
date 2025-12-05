@@ -1,5 +1,6 @@
 package com.moonsu.assignment
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import com.moonsu.assignment.core.navigation.NavigationHelper
 fun DagloApp(
     appState: DagloAppState = rememberDagloAppState(),
     navigationHelper: NavigationHelper,
+    isDarkTheme: Boolean,
 ) {
     LaunchedEffect(navigationHelper, appState.navController) {
         navigationHelper.navigationFlow.collect { event ->
@@ -53,12 +55,13 @@ fun DagloApp(
         }
     }
 
-    DagloTheme {
+    DagloTheme(darkTheme = isDarkTheme) {
         Box(modifier = Modifier.fillMaxSize()) {
             AppNavHost(
                 appState = appState,
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(DagloTheme.colors.background)
                     .windowInsetsPadding(WindowInsets.systemBars),
             )
 

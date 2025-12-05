@@ -1,6 +1,7 @@
 package com.moonsu.assignment.core.designsystem.foundation
 
 import android.app.Activity
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
@@ -9,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalView
@@ -33,7 +35,7 @@ private val LightColorScheme = lightColorScheme(
     onError = DagloColor.Gray00,
     errorContainer = DagloColor.Red100,
     onErrorContainer = DagloColor.Red900,
-    background = DagloColor.Gray300,
+    background = DagloColor.Gray00,
     onBackground = DagloColor.Gray1000,
     surface = DagloColor.Gray00,
     onSurface = DagloColor.Gray1000,
@@ -91,6 +93,13 @@ fun DagloTheme(
         val view = LocalView.current
         SideEffect {
             val window = (view.context as Activity).window
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                @Suppress("DEPRECATION")
+                window.statusBarColor = colors.background.toArgb()
+                @Suppress("DEPRECATION")
+                window.navigationBarColor = colors.background.toArgb()
+            }
             val insets = WindowCompat.getInsetsController(window, view)
             insets.isAppearanceLightStatusBars = !darkTheme
             insets.isAppearanceLightNavigationBars = !darkTheme
