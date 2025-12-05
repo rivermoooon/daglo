@@ -1,10 +1,4 @@
-import com.moonsu.assignment.setNamespace
-
 plugins {
-    id("moonsu.android.library")
-    id("moonsu.android.compose")
-}
-
-android {
-    setNamespace("core.common")
+    id("moonsu.kotlin.library")
+    id("moonsu.kotlin.hilt")
 }

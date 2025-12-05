@@ -22,6 +22,7 @@ fun AppNavHost(
         ) {
             characterNavigation(
                 sharedTransitionScope = this@SharedTransitionLayout,
+                snackbarHostState = appState.snackbarHostState,
             )
         }
     }

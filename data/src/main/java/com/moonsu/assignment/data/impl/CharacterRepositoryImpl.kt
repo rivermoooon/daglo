@@ -49,12 +49,12 @@ class CharacterRepositoryImpl @Inject constructor(
     }
 
     override fun getCharacter(id: Int): Flow<DataResource<Character>> =
-        flowDataResource {
+        flowDataResource(context = "CharacterRepository.getCharacter($id)") {
             remote.getCharacter(id).toDomain()
         }.flowOn(ioDispatcher)
 
     override fun searchCharacters(name: String): Flow<DataResource<List<Character>>> =
-        flowDataResource {
+        flowDataResource(context = "CharacterRepository.searchCharacters($name)") {
             remote.searchCharacters(name).results.toDomainList()
         }.flowOn(ioDispatcher)
 

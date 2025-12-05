@@ -13,6 +13,4 @@ sealed interface CharacterListIntent : UiIntent {
     data object OnSearchClick : CharacterListIntent
 }
 
-sealed interface CharacterListEffect : SideEffect {
-    data class ShowError(val message: String) : CharacterListEffect
-}
+sealed interface CharacterListEffect : SideEffect

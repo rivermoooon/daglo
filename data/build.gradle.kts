@@ -13,6 +13,7 @@ android {
 dependencies {
     implementation(projects.domain)
     implementation(projects.core.common)
+    implementation(projects.core.commonUi)
     implementation(libs.retrofit.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.paging.runtime)

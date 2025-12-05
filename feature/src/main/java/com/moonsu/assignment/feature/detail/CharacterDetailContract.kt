@@ -1,5 +1,6 @@
 package com.moonsu.assignment.feature.detail
 
+import com.moonsu.assignment.core.common.AppError
 import com.moonsu.assignment.core.common.base.SideEffect
 import com.moonsu.assignment.core.common.base.UiIntent
 import com.moonsu.assignment.core.common.base.UiState
@@ -28,5 +29,5 @@ sealed interface CharacterDetailIntent : UiIntent {
 }
 
 sealed interface CharacterDetailEffect : SideEffect {
-    data class ShowError(val message: String) : CharacterDetailEffect
+    data class ShowError(val error: AppError) : CharacterDetailEffect
 }

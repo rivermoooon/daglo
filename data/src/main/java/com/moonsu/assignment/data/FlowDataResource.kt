@@ -1,15 +1,22 @@
 package com.moonsu.assignment.data
 
 import android.util.Log
+import com.moonsu.assignment.data.DataErrorMapper.toAppError
 import com.moonsu.assignment.domain.DataResource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
  * Flow를 DataResource로 감싸는 유틸리티 함수
- * Loading → Success/Error 순서로 emit
+ *
+ * 자동으로 에러를 AppError로 변환하고 로깅합니다.
+ *
+ * @param context 에러 로깅용 컨텍스트
+ * @param fetch 데이터를 가져오는 suspend 함수
+ * @return DataResource로 감싸진 Flow
  */
 inline fun <T> flowDataResource(
+    context: String = "",
     crossinline fetch: suspend () -> T,
 ): Flow<DataResource<T>> = flow {
     emit(DataResource.Loading)
@@ -17,7 +24,8 @@ inline fun <T> flowDataResource(
         val result = fetch()
         emit(DataResource.Success(result))
     } catch (e: Exception) {
-        Log.e("FlowDataResource", "Error fetching data", e)
-        emit(DataResource.Error(e))
+        val appError = e.toAppError()
+        Log.e("DataResource", "[$context] ${appError.message}", appError.cause)
+        emit(DataResource.Error(appError))
     }
 }

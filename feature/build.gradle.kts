@@ -9,9 +9,10 @@ android {
 }
 
 dependencies {
+    implementation(projects.core.common)
     implementation(projects.core.designsystem)
     implementation(projects.core.navigation)
-    implementation(projects.core.common)
+    implementation(projects.core.commonUi)
     implementation(projects.domain)
     implementation(libs.androidx.paging.compose)
 }
