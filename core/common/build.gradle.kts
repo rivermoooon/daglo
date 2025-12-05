@@ -1,10 +1,13 @@
-import com.moonsu.assignment.setNamespace
-
 plugins {
-    id("moonsu.android.library")
-    id("moonsu.android.compose")
+    id("java-library")
+    alias(libs.plugins.kotlin.jvm)
 }
-
-android {
-    setNamespace("core.common")
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+    }
 }
