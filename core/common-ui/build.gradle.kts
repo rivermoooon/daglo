@@ -6,5 +6,5 @@ plugins {
 }
 
 android {
-    setNamespace("core.common")
+    setNamespace("core.common.ui")
 }
